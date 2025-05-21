@@ -6,7 +6,14 @@ import pickle
 import time
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, f1_score, precision_score, recall_score
+from sklearn.metrics import (
+    accuracy_score,
+    confusion_matrix,
+    classification_report,
+    f1_score,
+    precision_score,
+    recall_score,
+)
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
@@ -176,20 +183,20 @@ def test_model_reproducibility(sample_data, preprocessor):
 def test_model_detailed_metrics(train_model):
     """モデルの詳細な評価指標を検証"""
     model, X_test, y_test = train_model
-    
+
     # 予測
     y_pred = model.predict(X_test)
-    
+
     # 各種評価指標の計算
     f1 = f1_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred)
     recall = recall_score(y_test, y_pred)
-    
+
     # 評価指標の閾値チェック
     assert f1 >= 0.70, f"F1スコアが低すぎます: {f1}"
     assert precision >= 0.70, f"適合率が低すぎます: {precision}"
     assert recall >= 0.70, f"再現率が低すぎます: {recall}"
-    
+
     # 混同行列の確認
     cm = confusion_matrix(y_test, y_pred)
     assert cm.shape == (2, 2), "混同行列のサイズが不正です"
@@ -198,38 +205,41 @@ def test_model_detailed_metrics(train_model):
 def test_model_batch_inference_time(train_model):
     """バッチ処理での推論時間を検証"""
     model, X_test, _ = train_model
-    
+
     # バッチサイズを変えて推論時間を計測
     batch_sizes = [1, 10, 50, 100]
     inference_times = []
-    
+
     for batch_size in batch_sizes:
         start_time = time.time()
         for i in range(0, len(X_test), batch_size):
-            batch = X_test.iloc[i:i+batch_size]
+            batch = X_test.iloc[i : i + batch_size]
             model.predict(batch)
         end_time = time.time()
         inference_times.append(end_time - start_time)
-    
+
     # バッチサイズが大きいほど効率的であることを確認
-    for i in range(len(inference_times)-1):
-        assert inference_times[i] >= inference_times[i+1], \
-            f"バッチサイズ{batch_sizes[i]}の推論時間が{batch_sizes[i+1]}より長いです"
+    for i in range(len(inference_times) - 1):
+        assert (
+            inference_times[i] >= inference_times[i + 1]
+        ), f"バッチサイズ{batch_sizes[i]}の推論時間が{batch_sizes[i+1]}より長いです"
 
 
 def test_model_single_sample_inference_time(train_model):
     """個別サンプルでの推論時間を検証"""
     model, X_test, _ = train_model
-    
+
     # 単一サンプルでの推論時間を計測
     single_sample = X_test.iloc[0:1]
     inference_times = []
-    
+
     for _ in range(10):  # 10回計測して平均を取る
         start_time = time.time()
         model.predict(single_sample)
         end_time = time.time()
         inference_times.append(end_time - start_time)
-    
+
     avg_inference_time = sum(inference_times) / len(inference_times)
-    assert avg_inference_time < 0.1, f"単一サンプルの推論時間が長すぎます: {avg_inference_time}秒"
+    assert (
+        avg_inference_time < 0.1
+    ), f"単一サンプルの推論時間が長すぎます: {avg_inference_time}秒"
